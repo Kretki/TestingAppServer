@@ -12,7 +12,12 @@ from server.contracts.domain_errors import (
 )
 from server.contracts.quiz_models import QuizDocument, QuizFile, QuizQuestion, QuizSummary
 from server.contracts.service_contracts import FileRepository, QuizParser
-from server.quiz_files.question_kinds import QuestionKind, find_question_kind, require_kind_fields
+from server.quiz_files.question_kinds import (
+    LLM_CHECKED_KINDS,
+    find_question_kind,
+    find_secret_fields,
+    require_kind_fields,
+)
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -54,10 +59,11 @@ class QuizCatalog:
         ]
 
     def read_quiz(self, file_name: str) -> QuizFile:
-        """Read a quiz file without changing it.
+        """Read a quiz file in the form clients may see.
 
         Usage:
-            Call to serve a quiz to a client.
+            Call to serve a quiz to a client. Secret fields, such as the
+            solution steps of a task, are removed; other files are unchanged.
 
         Args:
             file_name: Name of the quiz file.
@@ -68,9 +74,13 @@ class QuizCatalog:
         Raises:
             InvalidFileNameError: If the name is not allowed.
             StoredFileMissingError: If the file does not exist.
+            InvalidFileContentError: If secrets cannot be removed from the file.
         """
-        raw_content = self._repository.read_bytes(file_name)
-        return QuizFile(raw_content=raw_content, media_type=self._parser_for(file_name).media_type)
+        quiz_parser = self._parser_for(file_name)
+        public_content = quiz_parser.remove_fields(
+            self._repository.read_bytes(file_name), find_secret_fields(file_name)
+        )
+        return QuizFile(raw_content=public_content, media_type=quiz_parser.media_type)
 
     def add_quiz(self, file_name: str, raw_content: bytes) -> None:
         """Validate and store a new quiz.
@@ -110,9 +120,9 @@ class QuizCatalog:
             StoredFileMissingError: If the file does not exist.
             InvalidFileContentError: If the stored file is corrupt.
             QuestionMissingError: If the quiz has no such question.
-            QuestionTypeError: If the file is not an _llm file.
+            QuestionTypeError: If the file is checked on the client.
         """
-        if find_question_kind(file_name) is not QuestionKind.KIND_LLM:
+        if find_question_kind(file_name) not in LLM_CHECKED_KINDS:
             raise QuestionTypeError(f"Questions of {file_name} are checked on the client")
         quiz_document = self._parse_validated(file_name, self._repository.read_bytes(file_name))
         for question in quiz_document.questions:

@@ -57,6 +57,8 @@ The server has no authentication: do not bind it to a public interface.
 | `GET /api/knowledge_base_file` | query `name` | the Markdown file |
 | `POST /api/knowledge_base_file` | multipart field `uploaded_file` (.md) | `201 {"file_name"}`, overwrites |
 
+The `description` in `GET /api/test_files` is generated, for example `12 testing questions`.
+
 `request_status` is `pending`, `ready` or `failed`. Errors are `{"detail": ...}`.
 
 In `POST /api/llm_answer`, `question_id` is the question's `id`. `current_attempt` starts at 1 and may not
@@ -75,18 +77,29 @@ The file name states how its questions are checked:
   `correct_answer` and at least one wrong answer.
 - `*_llm.csv` / `*_llm.json`: written answers, checked by the LLM. `correct_answer` is optional and is
   given to the LLM as a reference answer.
+- `*_task.csv` / `*_task.json`: interview tasks the candidate solves in words, without code, checked by the
+  LLM. Every task needs `llm_system_explanation`: the steps to cover, and the hints to give after failed
+  attempts 1 and 2. Use `max_attempts: 3` so both hints are reached.
 
 Other names are refused on upload. Existing quizzes are not overwritten.
 
 CSV columns:
 
-    id,question_name,question_text,correct_answer,wrong_answer_1,...,wrong_answer_10,knowledge_file
+    id,question_name,question_text,correct_answer,wrong_answer_1,...,wrong_answer_10,knowledge_file,llm_system_explanation
 
 JSON is an array of objects with the same keys. Empty or missing values are skipped.
-`knowledge_file` is optional: it names a file in `knowledge_base/`, which is given to the LLM as
+`knowledge_file` is optional: it is a path relative to `knowledge_base/`, and the file is given to the LLM as
 reference material. See the samples in `test_files/`.
 
-The `description` in `GET /api/test_files` is generated, for example `12 testing questions`.
+`llm_system_explanation` never leaves the server: `GET /api/test_file` removes it from every file, and also
+removes `correct_answer` from `*_task` files. Other files are served unchanged.
+
+## Folders
+
+`test_files/` and `knowledge_base/` may contain folders. Every file name in the API is a path relative to that
+directory with `/` separators, such as `python/basics_quiz.json`, in lists, query parameters, upload file names
+and `test_file`. Uploads create missing folders. Limits: 8 levels, 512 characters in total, 128 per part; a part
+may not start with `.` or contain `..`.
 
 ## Tests
 

@@ -58,7 +58,8 @@ def require_upload_name(uploaded_file: UploadFile) -> str:
     """Return the client-side name of an upload.
 
     Usage:
-        Call in upload handlers. The name is validated by the file store.
+        Call in upload handlers. The name may be a relative path with folders;
+        it is validated by the file store.
 
     Args:
         uploaded_file: Multipart file.

@@ -88,11 +88,7 @@ class GradingService:
         if question.knowledge_file:
             knowledge_text = self._knowledge_source.read_text(question.knowledge_file)
         grading_prompt = build_grading_prompt(
-            self._instruction_source.read_instructions(),
-            question.question_text,
-            question.correct_answer,
-            knowledge_text,
-            answer_attempt,
+            self._instruction_source.read_instructions(), question, knowledge_text, answer_attempt
         )
         return PendingGrading(self._job_store.create_job(), grading_prompt, answer_attempt.is_final)
 

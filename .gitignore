@@ -18,8 +18,8 @@ models/
 .env.*
 
 # Atomic-write leftovers in the data folders
-test_files/*.tmp
-knowledge_base/*.tmp
+test_files/**/*.tmp
+knowledge_base/**/*.tmp
 
 # Editors and OS
 .idea/

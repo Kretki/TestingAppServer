@@ -3,6 +3,8 @@
 import json
 from dataclasses import dataclass
 
+from server.contracts.quiz_models import QuizQuestion
+
 MAX_KNOWLEDGE_CHARACTERS = 40000
 ANSWER_CLOSING_TAG = "</user_answer"
 ESCAPED_CLOSING_TAG = "<\\/user_answer"
@@ -95,11 +97,7 @@ def encode_user_answer(user_answer: str) -> str:
 
 
 def build_grading_prompt(
-    instructions: str,
-    question_text: str,
-    reference_answer: str | None,
-    knowledge_text: str | None,
-    answer_attempt: AnswerAttempt,
+    instructions: str, question: QuizQuestion, knowledge_text: str | None, answer_attempt: AnswerAttempt
 ) -> GradingPrompt:
     """Compose the prompts for checking one answer.
 
@@ -108,18 +106,20 @@ def build_grading_prompt(
 
     Args:
         instructions: System prompt, from the instructions file.
-        question_text: Text of the quiz question.
-        reference_answer: The quiz file's correct answer, or None.
+        question: The question or task being answered.
         knowledge_text: Knowledge base document, or None.
         answer_attempt: The user's answer and attempt numbers.
 
     Returns:
-        The prompts for the LLM.
+        The prompts for the LLM. Tasks also carry a task_guide element.
     """
+    knowledge_section = build_knowledge_section(question.correct_answer, knowledge_text)
     request_lines = [
-        f"<question>{question_text}</question>",
-        f"<knowledge_base>{build_knowledge_section(reference_answer, knowledge_text)}</knowledge_base>",
-        f'<attempt current="{answer_attempt.current_attempt}" max="{answer_attempt.max_attempts}" />',
-        f"<user_answer>{encode_user_answer(answer_attempt.user_answer)}</user_answer>",
+        f"<question>{question.question_text}</question>",
+        f"<knowledge_base>{knowledge_section}</knowledge_base>",
     ]
+    if question.llm_system_explanation:
+        request_lines.append(f"<task_guide>{question.llm_system_explanation}</task_guide>")
+    request_lines.append(f'<attempt current="{answer_attempt.current_attempt}" max="{answer_attempt.max_attempts}" />')
+    request_lines.append(f"<user_answer>{encode_user_answer(answer_attempt.user_answer)}</user_answer>")
     return GradingPrompt(system_prompt=instructions, user_prompt="\n".join(request_lines))

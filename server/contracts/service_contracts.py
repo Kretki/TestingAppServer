@@ -1,5 +1,6 @@
 """Small protocols that decouple the services from concrete implementations."""
 
+from collections.abc import Collection
 from typing import Protocol
 
 from server.contracts.quiz_models import QuizDocument, QuizQuestion
@@ -55,7 +56,29 @@ class FileRepository(Protocol):
         ...
 
 
-class QuizParser(Protocol):
+class FieldRemover(Protocol):
+    """Removal of secret fields from a stored file."""
+
+    def remove_fields(self, raw_content: bytes, hidden_fields: Collection[str]) -> bytes:
+        """Remove fields from every question of a file.
+
+        Usage:
+            Call before a file with secret fields leaves the server.
+
+        Args:
+            raw_content: Bytes of the file.
+            hidden_fields: Names of the fields to remove.
+
+        Returns:
+            The file without the fields, unchanged when it has none of them.
+
+        Raises:
+            InvalidFileContentError: If the content cannot be parsed.
+        """
+        ...
+
+
+class QuizParser(FieldRemover, Protocol):
     """Parser of one quiz file format.
 
     Attributes:
@@ -100,7 +123,7 @@ class OpenQuestionSource(Protocol):
 
         Raises:
             QuestionMissingError: If the quiz has no such question.
-            QuestionTypeError: If the question is not an LLM question.
+            QuestionTypeError: If the file is checked on the client.
         """
         ...
 

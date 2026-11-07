@@ -50,14 +50,14 @@ def read_test_file(file_name: FileNameQuery, quiz_catalog: CatalogAccess) -> Res
     """Return the content of one quiz file.
 
     Usage:
-        GET /api/test_file?file_name=sample_quiz.json
+        GET /api/test_file?file_name=folder/sample_quiz.json
 
     Args:
-        file_name: Name of the quiz file.
+        file_name: Relative path of the quiz file.
         quiz_catalog: Injected catalog.
 
     Returns:
-        The unchanged file with its media type.
+        The file with its media type, without secret fields.
 
     Raises:
         QuizServerError: If the name is invalid or the file is missing.
@@ -72,9 +72,10 @@ def upload_test_file(uploaded_file: UploadFile, quiz_catalog: CatalogAccess) -> 
 
     Usage:
         POST /api/test_file as multipart form with the field `uploaded_file`.
+        Its file name may be a relative path; missing folders are created.
 
     Args:
-        uploaded_file: The .json or .csv file.
+        uploaded_file: The .json or .csv file, named _quiz, _llm or _task.
         quiz_catalog: Injected catalog.
 
     Returns:
@@ -159,10 +160,10 @@ def read_knowledge_file(file_name: KnowledgeNameQuery, knowledge_library: Librar
     """Return one knowledge base file.
 
     Usage:
-        GET /api/knowledge_base_file?name=sample_topic.md
+        GET /api/knowledge_base_file?name=folder/sample_topic.md
 
     Args:
-        file_name: Name of the .md file.
+        file_name: Relative path of the .md file.
         knowledge_library: Injected library.
 
     Returns:
@@ -180,7 +181,8 @@ def upload_knowledge_file(uploaded_file: UploadFile, knowledge_library: LibraryA
 
     Usage:
         POST /api/knowledge_base_file as multipart form with the field
-        `uploaded_file`.
+        `uploaded_file`. Its file name may be a relative path; missing folders
+        are created.
 
     Args:
         uploaded_file: The .md file.

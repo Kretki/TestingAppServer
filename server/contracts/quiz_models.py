@@ -8,7 +8,8 @@ MAX_QUESTIONS = 1000
 MAX_WRONG_ANSWERS = 10
 MAX_TEXT_LENGTH = 4000
 MAX_IDENTIFIER_LENGTH = 64
-MAX_FILE_NAME_LENGTH = 128
+MAX_FILE_NAME_LENGTH = 512
+MAX_EXPLANATION_LENGTH = 20000
 
 QuizText = Annotated[str, Field(min_length=1, max_length=MAX_TEXT_LENGTH)]
 
@@ -29,8 +30,11 @@ class QuizQuestion(BaseModel):
         correct_answer: Correct answer. Required in _quiz files, optional
             reference for the LLM in _llm files.
         wrong_answers: Up to 10 wrong answers.
-        knowledge_file: Optional knowledge base .md file, given to the LLM as
-            reference material.
+        knowledge_file: Optional relative path of a knowledge base .md file,
+            given to the LLM as reference material.
+        llm_system_explanation: Steps the candidate must cover and the hints to
+            give after failed attempts. Required in _task files, and never sent
+            to clients.
     """
 
     model_config = ConfigDict(coerce_numbers_to_str=True)
@@ -41,6 +45,7 @@ class QuizQuestion(BaseModel):
     correct_answer: QuizText | None = None
     wrong_answers: Annotated[list[QuizText], Field(max_length=MAX_WRONG_ANSWERS)] = []
     knowledge_file: Annotated[str, Field(max_length=MAX_FILE_NAME_LENGTH)] | None = None
+    llm_system_explanation: Annotated[str, Field(max_length=MAX_EXPLANATION_LENGTH)] | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -105,7 +110,7 @@ class QuizSummary(BaseModel):
         Returned by `QuizCatalog.list_quizzes`.
 
     Attributes:
-        file_name: Name of the quiz file.
+        file_name: Relative path of the quiz file.
         description: Generated summary, empty for an unusable file.
     """
 

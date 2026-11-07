@@ -8,7 +8,7 @@ from server.contracts.quiz_models import MAX_IDENTIFIER_LENGTH
 from server.llm_grading.grading_jobs import GradingStatus
 
 MAX_ANSWER_LENGTH = 20000
-MAX_NAME_LENGTH = 128
+MAX_NAME_LENGTH = 512
 MAX_ATTEMPT_NUMBER = 100
 
 
@@ -16,7 +16,7 @@ class UploadResult(BaseModel):
     """Response of a file upload.
 
     Attributes:
-        file_name: Name under which the file was stored.
+        file_name: Relative path under which the file was stored.
     """
 
     file_name: str
@@ -26,7 +26,7 @@ class LlmAnswerRequest(BaseModel):
     """Body of POST /api/llm_answer.
 
     Attributes:
-        test_file: Name of the quiz file, which identifies the test.
+        test_file: Relative path of the _llm or _task file.
         question_id: Value of the question's id field, a string or number.
         user_answer: Answer written by the user.
         current_attempt: Number of this attempt, 1..max_attempts.
