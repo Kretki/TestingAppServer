@@ -1,0 +1,12 @@
+This is server part of the application that would test user knowledge. It should provide user test data, get users answers with id of test and question and returns the correct answer based on llm output. Test answers will be checked on users side.
+Model should be used - Qwen3.8-27B. Preferrable file extensions for tests - .json and .csv. They're need to be placed in the different from src folder
+The server should provide that REST API links:
+
+/api/test_files - GET - returns list of the files in the server test directory folder with descriptions
+/api/test_file - GET - returns content of the one selected by name file from server test directory folder
+/api/test_file - POST - places file in the server test directory folder from user
+/api/llm_answer - POST - receives answer for chosen question from user and checks it via llm. id of request is generated as answer to the user
+/api/llm_answer - GET - user checks if llm answer is ready by given id. When its ready - the answer returns to the user and shows on the screen
+/api/knowledge_base_files - GET - user gets the list of .md files from knowledge_base folder
+/api/knowledge_base_file - GET - user gets the .md file from knowledge_base folder
+/api/knowledge_base_file - POST - user provides .md file that is placed into knowledge_base folder and could overwrite existing files

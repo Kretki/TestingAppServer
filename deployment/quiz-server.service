@@ -1,0 +1,25 @@
+# Quiz REST server with the gpt-oss-20b model, as a systemd user service.
+#
+# Usage:   systemctl --user start|stop|restart|status quiz-server
+# Install: systemctl --user link "$PWD/deployment/quiz-server.service"
+#          loginctl enable-linger "$USER"
+# Output:  logs go to the journal: journalctl --user -u quiz-server -f
+# Settings: optional QUIZ_* variables in ~/.config/quiz-server.env, one NAME=value per line.
+# After `uv sync` or a code change, run `systemctl --user restart quiz-server`.
+
+[Unit]
+Description=Quiz REST server
+
+[Service]
+Type=exec
+WorkingDirectory=%h/android_testing_app_server
+EnvironmentFile=-%h/.config/quiz-server.env
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+ExecStart=%h/android_testing_app_server/.venv/bin/quiz-server
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

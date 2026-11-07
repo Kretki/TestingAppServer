@@ -1,0 +1,48 @@
+[project]
+name = "quiz-server"
+version = "0.1.0"
+description = "Local REST server for a quiz application with LLM-checked answers."
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "accelerate>=1.0,<2",
+    "fastapi>=0.162.0,<1",
+    "kernels>=0.17.2,<0.18",
+    "python-multipart>=0.0.33,<1",
+    "torch>=2.15,<3",
+    "transformers>=5.22,<6",
+    "uvicorn>=0.54.0,<1",
+]
+
+[project.scripts]
+quiz-server = "server.application:run_server"
+
+[build-system]
+requires = ["uv_build>=0.13,<0.14"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "server"
+module-root = ""
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "B", "UP", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"server_tests/*" = ["S101"]
+
+[tool.pytest.ini_options]
+testpaths = ["server_tests"]
+
+[dependency-groups]
+dev = [
+    "bandit>=1.9.4",
+    "httpx>=0.28.1,<1",
+    "pip-audit>=2.10.1",
+    "pytest>=9.2.0",
+    "ruff>=0.17.4",
+]
