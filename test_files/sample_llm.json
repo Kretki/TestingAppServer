@@ -1,9 +1,0 @@
-[
-  {
-    "id": 1,
-    "question_name": "Orbits",
-    "question_text": "Why do planets stay in orbit around the Sun?",
-    "correct_answer": "The Sun's gravity continuously bends their straight-line motion into a closed path.",
-    "knowledge_file": "sample_topic.md"
-  }
-]

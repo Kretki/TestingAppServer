@@ -78,7 +78,7 @@ def test_llm_failure_is_reported(api_client: TestClient, chat_model: FakeChatMod
 def test_llm_answer_errors(api_client: TestClient) -> None:
     """Wrong questions and ids give client errors."""
     prepare_quiz(api_client)
-    assert submit_answer(api_client, 1, "base_quiz.json").status_code == 400
+    assert submit_answer(api_client, 1, "quiz/base_quiz.json").status_code == 400
     assert submit_answer(api_client, 99).status_code == 404
     unknown_id = "00000000-0000-4000-8000-000000000000"
     assert api_client.get("/api/llm_answer", params={"request_id": unknown_id}).status_code == 404
@@ -152,7 +152,7 @@ def test_attempt_numbers_are_validated(api_client: TestClient, current_attempt: 
         max_attempts: Value of max_attempts.
     """
     prepare_quiz(api_client)
-    answer_body = {"test_file": "base_llm.json", "question_id": 2, "user_answer": "Answer"}
+    answer_body = {"test_file": "llm/base_llm.json", "question_id": 2, "user_answer": "Answer"}
     answer_body |= {"current_attempt": current_attempt, "max_attempts": max_attempts}
     assert api_client.post("/api/llm_answer", json=answer_body).status_code == 422
 

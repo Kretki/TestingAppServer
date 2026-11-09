@@ -15,8 +15,8 @@ Add `systemctl --user enable quiz-server` to start it automatically. `QUIZ_*` se
 `~/.config/quiz-server.env`. Restart the service after a code change or `uv sync`.
 To run it in the foreground instead, stop the service and use `uv run quiz-server`.
 
-The server listens on `http://127.0.0.1:8000`; interactive API docs are at `/docs`.
-An Android emulator reaches it at `http://10.0.2.2:8000`.
+The server listens on port 8080 on all network interfaces; interactive API docs are at `/docs`.
+An Android emulator reaches it at `http://10.0.2.2:8080`.
 
 LLM checks run on `models/gpt-oss-20b` (original MXFP4 weights), loaded directly into the server process
 with `transformers`; no separate model server is used. Loading starts with the service and takes about
@@ -33,7 +33,7 @@ without a restart. If it is missing or empty, `POST /api/llm_answer` returns `50
 
 | Variable | Default |
 |---|---|
-| `QUIZ_HOST` / `QUIZ_PORT` | `127.0.0.1` / `8000` |
+| `QUIZ_HOST` / `QUIZ_PORT` | `0.0.0.0` / `8080` |
 | `QUIZ_TEST_DIR` | `test_files/` |
 | `QUIZ_KNOWLEDGE_DIR` | `knowledge_base/` |
 | `QUIZ_LLM_INPUT_FILE` | `llm_input.md` |
@@ -83,13 +83,17 @@ The file name states how its questions are checked:
 
 Other names are refused on upload. Existing quizzes are not overwritten.
 
+Each type has its own folder in `test_files/`: `quiz/`, `llm/` and `interview/` (tasks). Uploads go there
+automatically: `basics_quiz.json` is stored as `quiz/basics_quiz.json`, and `python/basics_quiz.json` as
+`quiz/python/basics_quiz.json`. The upload response gives the stored path.
+
 CSV columns:
 
     id,question_name,question_text,correct_answer,wrong_answer_1,...,wrong_answer_10,knowledge_file,llm_system_explanation
 
 JSON is an array of objects with the same keys. Empty or missing values are skipped.
 `knowledge_file` is optional: it is a path relative to `knowledge_base/`, and the file is given to the LLM as
-reference material. See the samples in `test_files/`.
+reference material. See the samples in the `test_files/` folders.
 
 `llm_system_explanation` never leaves the server: `GET /api/test_file` removes it from every file, and also
 removes `correct_answer` from `*_task` files. Other files are served unchanged.
@@ -97,8 +101,8 @@ removes `correct_answer` from `*_task` files. Other files are served unchanged.
 ## Folders
 
 `test_files/` and `knowledge_base/` may contain folders. Every file name in the API is a path relative to that
-directory with `/` separators, such as `python/basics_quiz.json`, in lists, query parameters, upload file names
-and `test_file`. Uploads create missing folders. Limits: 8 levels, 512 characters in total, 128 per part; a part
+directory with `/` separators, in lists, query parameters, upload file names
+and `test_file`, for example `quiz/python/basics_quiz.json`. Uploads create missing folders. Limits: 8 levels, 512 characters in total, 128 per part; a part
 may not start with `.` or contain `..`.
 
 ## Tests

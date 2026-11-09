@@ -1,8 +1,0 @@
-[
-  {
-    "id": 1,
-    "question_name": "URL shortener",
-    "question_text": "Explain how you would design a URL shortener service. Discuss your approach in words; no code is needed.",
-    "llm_system_explanation": "Steps the candidate must cover: (1) generating a short unique key, for example a counter encoded in base62 or a hash with collision handling; (2) storing the key to URL mapping in a database; (3) redirecting a short link by looking up the key; (4) handling read-heavy traffic with a cache. Hint after failed attempt 1: ask how they would make sure two long URLs never get the same short key. Hint after failed attempt 2: ask what happens to the database when one popular link is opened millions of times."
-  }
-]

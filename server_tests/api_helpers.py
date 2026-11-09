@@ -135,7 +135,9 @@ def dump_quiz(quiz_rows: list[dict[str, object]]) -> bytes:
     return json.dumps(quiz_rows).encode()
 
 
-def submit_answer(api_client: TestClient, question_id: str | int, test_file: str = "base_llm.json") -> httpx.Response:
+def submit_answer(
+    api_client: TestClient, question_id: str | int, test_file: str = "llm/base_llm.json"
+) -> httpx.Response:
     """Post an answer.
 
     Args:

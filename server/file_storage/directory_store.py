@@ -11,7 +11,7 @@ from server.contracts.domain_errors import InvalidFileNameError, StoredFileConfl
 MAX_PART_LENGTH = 128
 MAX_PATH_LENGTH = 512
 MAX_PATH_DEPTH = 8
-SAFE_PATH_PART = re.compile(r"[A-Za-z0-9][A-Za-z0-9._ -]*")
+SAFE_PATH_PART = re.compile(r"[^\W_][\w._ -]*")
 
 
 def is_safe_part(path_part: str) -> bool:

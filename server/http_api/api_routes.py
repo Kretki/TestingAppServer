@@ -72,21 +72,22 @@ def upload_test_file(uploaded_file: UploadFile, quiz_catalog: CatalogAccess) -> 
 
     Usage:
         POST /api/test_file as multipart form with the field `uploaded_file`.
-        Its file name may be a relative path; missing folders are created.
+        Its file name may be a relative path. The file is stored inside the
+        folder of its kind (quiz, llm or interview), and missing folders are
+        created.
 
     Args:
         uploaded_file: The .json or .csv file, named _quiz, _llm or _task.
         quiz_catalog: Injected catalog.
 
     Returns:
-        The stored file name.
+        The relative path under which the file was stored.
 
     Raises:
         QuizServerError: If the name or content is invalid or the file exists.
     """
     file_name = require_upload_name(uploaded_file)
-    quiz_catalog.add_quiz(file_name, uploaded_file.file.read())
-    return UploadResult(file_name=file_name)
+    return UploadResult(file_name=quiz_catalog.add_quiz(file_name, uploaded_file.file.read()))
 
 
 @api_router.post("/llm_answer", status_code=status.HTTP_202_ACCEPTED)

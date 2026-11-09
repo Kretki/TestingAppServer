@@ -25,3 +25,5 @@ knowledge_base/**/*.tmp
 .idea/
 .vscode/
 .DS_Store
+knowledge_base
+test_files

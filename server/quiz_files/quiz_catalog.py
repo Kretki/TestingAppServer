@@ -14,8 +14,10 @@ from server.contracts.quiz_models import QuizDocument, QuizFile, QuizQuestion, Q
 from server.contracts.service_contracts import FileRepository, QuizParser
 from server.quiz_files.question_kinds import (
     LLM_CHECKED_KINDS,
+    find_description_kind,
     find_question_kind,
     find_secret_fields,
+    place_in_kind_folder,
     require_kind_fields,
 )
 
@@ -82,16 +84,20 @@ class QuizCatalog:
         )
         return QuizFile(raw_content=public_content, media_type=quiz_parser.media_type)
 
-    def add_quiz(self, file_name: str, raw_content: bytes) -> None:
+    def add_quiz(self, file_name: str, raw_content: bytes) -> str:
         """Validate and store a new quiz.
 
         Usage:
-            Call for quiz uploads. Existing quizzes are never replaced, because
-            clients may hold ids of their questions.
+            Call for quiz uploads. The file goes into the folder of its question
+            kind. Existing quizzes are never replaced, because clients may hold
+            ids of their questions.
 
         Args:
-            file_name: Name of the new file.
+            file_name: Relative path from the client.
             raw_content: Bytes of the file.
+
+        Returns:
+            The relative path under which the file was stored.
 
         Raises:
             InvalidFileNameError: If the name is not allowed or does not state
@@ -100,7 +106,9 @@ class QuizCatalog:
             StoredFileConflictError: If the file already exists.
         """
         self._parse_validated(file_name, raw_content)
-        self._repository.write_bytes(file_name, raw_content, allow_overwrite=False)
+        stored_name = place_in_kind_folder(file_name)
+        self._repository.write_bytes(stored_name, raw_content, allow_overwrite=False)
+        return stored_name
 
     def find_open_question(self, file_name: str, question_id: str) -> QuizQuestion:
         """Find a question that is checked by the LLM.
@@ -184,11 +192,13 @@ class QuizCatalog:
 
         Returns:
             Text such as "12 testing questions", or an empty string for an
-            unusable file.
+            unusable file. The kind may come from the name or the folder.
         """
         try:
-            quiz_document = self._parse_validated(file_name, self._repository.read_bytes(file_name))
+            question_kind = find_description_kind(file_name)
+            quiz_document = self._parser_for(file_name).parse_quiz(self._repository.read_bytes(file_name))
+            require_kind_fields(quiz_document, question_kind)
         except (InvalidFileContentError, InvalidFileNameError):
             MODULE_LOGGER.warning("Quiz file %s is unusable", file_name)
             return ""
-        return f"{len(quiz_document.questions)} {find_question_kind(file_name).value} questions"
+        return f"{len(quiz_document.questions)} {question_kind.value} questions"

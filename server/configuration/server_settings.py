@@ -5,8 +5,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_LISTEN_HOST = "127.0.0.1"
-DEFAULT_LISTEN_PORT = 8000
+DEFAULT_LISTEN_HOST = "0.0.0.0"
+DEFAULT_LISTEN_PORT = 8080
 DEFAULT_LLM_REASONING_EFFORT = "medium"
 REASONING_EFFORTS = ("low", "medium", "high")
 DEFAULT_LLM_TIMEOUT_SECONDS = 300.0

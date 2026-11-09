@@ -1,7 +1,18 @@
 """Tests of quiz and knowledge base file handling."""
 
+from pathlib import Path
+
 import pytest
-from api_helpers import CHOICE_QUIZ, CSV_OPEN_QUIZ, CSV_QUIZ, OPEN_QUIZ, dump_quiz, prepare_quiz, upload_file
+from api_helpers import (
+    CHOICE_QUIZ,
+    CSV_OPEN_QUIZ,
+    CSV_QUIZ,
+    OPEN_QUIZ,
+    TASK_QUIZ,
+    dump_quiz,
+    prepare_quiz,
+    upload_file,
+)
 from fastapi.testclient import TestClient
 
 
@@ -11,15 +22,15 @@ def test_quiz_files_are_listed_and_returned(api_client: TestClient) -> None:
     assert upload_file(api_client, "/api/test_file", "table_quiz.csv", CSV_QUIZ.encode()).status_code == 201
     assert upload_file(api_client, "/api/test_file", "table_llm.csv", CSV_OPEN_QUIZ.encode()).status_code == 201
     assert api_client.get("/api/test_files").json() == [
-        {"file_name": "base_llm.json", "description": "1 llm questions"},
-        {"file_name": "base_quiz.json", "description": "1 testing questions"},
-        {"file_name": "table_llm.csv", "description": "1 llm questions"},
-        {"file_name": "table_quiz.csv", "description": "1 testing questions"},
+        {"file_name": "llm/base_llm.json", "description": "1 llm questions"},
+        {"file_name": "llm/table_llm.csv", "description": "1 llm questions"},
+        {"file_name": "quiz/base_quiz.json", "description": "1 testing questions"},
+        {"file_name": "quiz/table_quiz.csv", "description": "1 testing questions"},
     ]
-    csv_response = api_client.get("/api/test_file", params={"file_name": "table_quiz.csv"})
+    csv_response = api_client.get("/api/test_file", params={"file_name": "quiz/table_quiz.csv"})
     assert csv_response.text == CSV_QUIZ
     assert csv_response.headers["content-type"].startswith("text/csv")
-    assert api_client.get("/api/test_file", params={"file_name": "base_llm.json"}).json() == OPEN_QUIZ
+    assert api_client.get("/api/test_file", params={"file_name": "llm/base_llm.json"}).json() == OPEN_QUIZ
 
 
 def test_quiz_upload_is_validated(api_client: TestClient) -> None:
@@ -34,6 +45,51 @@ def test_quiz_upload_is_validated(api_client: TestClient) -> None:
     assert upload_file(api_client, route_path, "base_quiz.txt", dump_quiz(CHOICE_QUIZ)).status_code == 400
     repeated = [{"id": 1, "question_text": "One"}, {"id": 1, "question_text": "Two"}]
     assert upload_file(api_client, route_path, "repeat_llm.json", dump_quiz(repeated)).status_code == 400
+
+
+def test_english_names_receive_descriptions(api_client: TestClient, tmp_path: Path) -> None:
+    """English files with the kind at the start of the name are described.
+
+    Args:
+        api_client: Test client.
+        tmp_path: Folder holding the temporary quiz store.
+    """
+    quiz_root = tmp_path / "quizzes"
+    (quiz_root / "quiz").mkdir(parents=True)
+    (quiz_root / "llm").mkdir(parents=True)
+    (quiz_root / "interview").mkdir(parents=True)
+    (quiz_root / "quiz" / "quiz_sample.json").write_bytes(dump_quiz(CHOICE_QUIZ))
+    (quiz_root / "llm" / "llm_sample.json").write_bytes(dump_quiz(OPEN_QUIZ))
+    (quiz_root / "interview" / "task_sample.json").write_bytes(dump_quiz(TASK_QUIZ))
+    assert api_client.get("/api/test_files").json() == [
+        {"file_name": "interview/task_sample.json", "description": "1 task questions"},
+        {"file_name": "llm/llm_sample.json", "description": "1 llm questions"},
+        {"file_name": "quiz/quiz_sample.json", "description": "1 testing questions"},
+    ]
+
+
+def test_folder_states_description_kind(api_client: TestClient, tmp_path: Path) -> None:
+    """A file whose name states no kind is described from its folder.
+
+    Args:
+        api_client: Test client.
+        tmp_path: Folder holding the temporary quiz store.
+    """
+    quiz_root = tmp_path / "quizzes"
+    (quiz_root / "quiz").mkdir(parents=True)
+    (quiz_root / "llm").mkdir(parents=True)
+    (quiz_root / "interview").mkdir(parents=True)
+    (quiz_root / "other").mkdir(parents=True)
+    (quiz_root / "quiz" / "sample_topic.json").write_bytes(dump_quiz(CHOICE_QUIZ))
+    (quiz_root / "llm" / "sample_topic.json").write_bytes(dump_quiz(OPEN_QUIZ))
+    (quiz_root / "interview" / "sample_topic.json").write_bytes(dump_quiz(TASK_QUIZ))
+    (quiz_root / "other" / "sample_topic.json").write_bytes(dump_quiz(CHOICE_QUIZ))
+    assert api_client.get("/api/test_files").json() == [
+        {"file_name": "interview/sample_topic.json", "description": "1 task questions"},
+        {"file_name": "llm/sample_topic.json", "description": "1 llm questions"},
+        {"file_name": "other/sample_topic.json", "description": ""},
+        {"file_name": "quiz/sample_topic.json", "description": "1 testing questions"},
+    ]
 
 
 def test_file_name_states_question_kind(api_client: TestClient) -> None:

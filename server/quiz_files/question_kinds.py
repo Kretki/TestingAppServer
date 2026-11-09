@@ -20,6 +20,16 @@ KINDS_BY_NAME_ENDING = {
     "_llm": QuestionKind.KIND_LLM,
     "_task": QuestionKind.KIND_TASK,
 }
+KIND_FOLDERS = {
+    QuestionKind.KIND_TESTING: "quiz",
+    QuestionKind.KIND_LLM: "llm",
+    QuestionKind.KIND_TASK: "interview",
+}
+DESCRIPTION_NAME_PREFIXES = {
+    "quiz_": QuestionKind.KIND_TESTING,
+    "llm_": QuestionKind.KIND_LLM,
+    "task_": QuestionKind.KIND_TASK,
+}
 LLM_CHECKED_KINDS = frozenset({QuestionKind.KIND_LLM, QuestionKind.KIND_TASK})
 SECRET_FIELDS = ("llm_system_explanation",)
 SECRET_TASK_FIELDS = ("llm_system_explanation", "correct_answer")
@@ -46,6 +56,121 @@ def find_question_kind(file_name: str) -> QuestionKind:
         if file_stem.endswith(name_ending):
             return question_kind
     raise InvalidFileNameError(f"Quiz file name must end in _quiz, _llm or _task: {file_name!r}")
+
+
+def find_description_kind(file_name: str) -> QuestionKind:
+    """Read the question kind used in a list description.
+
+    Usage:
+        Call when building the description of a stored quiz. The kind is read
+        from the stem ending (`_quiz`, `_llm`, `_task`), then from an English
+        prefix (`quiz_`, `llm_`, `task_`), then from the first folder
+        (`quiz`, `llm`, `interview`).
+
+    Args:
+        file_name: Relative path of the quiz file.
+
+    Returns:
+        The kind of all questions in the file.
+
+    Raises:
+        InvalidFileNameError: If the name and folder state no question kind.
+    """
+    try:
+        return find_question_kind(file_name)
+    except InvalidFileNameError:
+        return find_fallback_description_kind(file_name)
+
+
+def find_fallback_description_kind(file_name: str) -> QuestionKind:
+    """Read a description kind after the stem ending did not match.
+
+    Usage:
+        Call from `find_description_kind`.
+
+    Args:
+        file_name: Relative path of the quiz file.
+
+    Returns:
+        The kind from the name prefix, or from the first folder.
+
+    Raises:
+        InvalidFileNameError: If neither the prefix nor the folder states a kind.
+    """
+    try:
+        return match_description_prefix(file_name)
+    except InvalidFileNameError:
+        return match_description_folder(file_name)
+
+
+def match_description_folder(file_name: str) -> QuestionKind:
+    """Read a question kind from the first folder of a quiz path.
+
+    Usage:
+        Call from `find_fallback_description_kind` when the file name states no kind.
+
+    Args:
+        file_name: Relative path of the quiz file, such as "quiz/topic.json".
+
+    Returns:
+        The kind of the folder `quiz`, `llm` or `interview`.
+
+    Raises:
+        InvalidFileNameError: If the path has no such folder.
+    """
+    path_parts = PurePosixPath(file_name).parts
+    if len(path_parts) < 2:
+        raise InvalidFileNameError(f"Quiz file name must state a question kind: {file_name!r}")
+    folder_name = path_parts[0].lower()
+    for question_kind, kind_folder in KIND_FOLDERS.items():
+        if folder_name == kind_folder:
+            return question_kind
+    raise InvalidFileNameError(f"Quiz file name must state a question kind: {file_name!r}")
+
+
+def match_description_prefix(file_name: str) -> QuestionKind:
+    """Read a question kind from an English file-name prefix.
+
+    Usage:
+        Call from `find_description_kind` when the stem has no kind ending.
+
+    Args:
+        file_name: Relative path of the quiz file.
+
+    Returns:
+        The kind stated by a `quiz_`, `llm_` or `task_` prefix.
+
+    Raises:
+        InvalidFileNameError: If the stem has no such prefix.
+    """
+    file_stem = PurePosixPath(file_name).stem.lower()
+    for name_prefix, question_kind in DESCRIPTION_NAME_PREFIXES.items():
+        if file_stem.startswith(name_prefix):
+            return question_kind
+    raise InvalidFileNameError(f"Quiz file name must state a question kind: {file_name!r}")
+
+
+def place_in_kind_folder(file_name: str) -> str:
+    """Build the path where an uploaded quiz file belongs.
+
+    Usage:
+        Call for uploads, so each question kind stays in its own folder.
+
+    Args:
+        file_name: Relative path from the client, such as "basics_quiz.json",
+            "python/basics_quiz.json" or "quiz/basics_quiz.json".
+
+    Returns:
+        The path inside the kind's folder, such as "quiz/python/basics_quiz.json".
+        A path already inside that folder is returned unchanged.
+
+    Raises:
+        InvalidFileNameError: If the name does not end in _quiz, _llm or _task.
+    """
+    kind_folder = KIND_FOLDERS[find_question_kind(file_name)]
+    if file_name.startswith(f"{kind_folder}/"):
+        return file_name
+    return f"{kind_folder}/{file_name}"
 
 
 def find_secret_fields(file_name: str) -> tuple[str, ...]:
